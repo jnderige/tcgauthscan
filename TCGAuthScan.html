@@ -1,0 +1,984 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="TCG AuthScan">
+<meta name="theme-color" content="#060912">
+<title>TCG AuthScan</title>
+<link rel="manifest" href="#" id="manifest-link">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#060912;--surface:#0e1020;--card:#13152a;
+  --border:rgba(108,99,255,0.18);--purple:#6c63ff;--purpleL:#a29bfe;
+  --gold:#FFD700;--green:#00d68f;--red:#ff4757;--orange:#ffa502;
+  --text:#e0e0f0;--muted:#555570;
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;overflow:hidden}
+#app{height:100%;display:flex;flex-direction:column}
+
+/* SCREENS */
+.screen{display:none;flex-direction:column;height:100%}
+.screen.active{display:flex}
+
+/* SCROLLABLE CONTENT */
+.scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:env(safe-area-inset-bottom,20px)}
+.scroll::-webkit-scrollbar{display:none}
+
+/* HEADER */
+.header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);background:rgba(6,9,18,0.95);backdrop-filter:blur(20px);position:sticky;top:0;z-index:50;padding-top:calc(12px + env(safe-area-inset-top,0px))}
+.header-logo{display:flex;align-items:center;gap:10}
+.header-icon{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--purple),#ff4757);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.header-title{font-weight:800;font-size:15px;color:#fff}
+.header-title span{color:var(--purple)}
+.header-sub{font-size:9px;color:var(--muted);letter-spacing:2px;text-transform:uppercase}
+.header-btns{display:flex;gap:8px}
+.hbtn{background:rgba(108,99,255,0.12);border:1px solid rgba(108,99,255,0.25);border-radius:8px;padding:6px 10px;color:var(--purpleL);font-size:12px;font-weight:700;cursor:pointer}
+
+/* SETUP SCREEN */
+.setup-scroll{padding:20px;padding-bottom:40px}
+.setup-logo{display:flex;flex-direction:column;align-items:center;margin-bottom:24px;margin-top:10px}
+.setup-logo-icon{width:64px;height:64px;border-radius:18px;background:linear-gradient(135deg,var(--purple),#4834d4);display:flex;align-items:center;justify-content:center;font-size:30px;margin-bottom:12px;box-shadow:0 6px 24px rgba(108,99,255,0.4)}
+.setup-logo-title{font-weight:800;font-size:22px;color:#fff;letter-spacing:1px}
+.setup-logo-title span{color:var(--purple)}
+.setup-logo-sub{font-size:9px;color:var(--muted);letter-spacing:3px;text-transform:uppercase;margin-top:4px}
+.setup-heading{font-size:18px;font-weight:800;margin-bottom:6px}
+.setup-sub{color:var(--muted);font-size:13px;margin-bottom:20px;line-height:1.6}
+
+.key-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:14px}
+.key-card-header{display:flex;align-items:center;gap:10;margin-bottom:8px}
+.key-card-icon{font-size:22px}
+.key-card-title{font-weight:700;font-size:14px;color:var(--text)}
+.key-card-req{font-size:10px;font-weight:700;color:var(--red);margin-top:1px}
+.key-card-opt{font-size:10px;font-weight:700;color:var(--muted);margin-top:1px}
+.key-card-desc{color:var(--muted);font-size:12px;line-height:1.7;margin-bottom:12px}
+.key-card-desc a{color:var(--purpleL)}
+.free-tag{background:rgba(0,214,143,0.15);border:1px solid rgba(0,214,143,0.3);border-radius:6px;padding:2px 7px;margin-left:auto;flex-shrink:0}
+.free-tag span{color:var(--green);font-size:9px;font-weight:800;letter-spacing:1px}
+.input-row{display:flex;gap:8px;align-items:center}
+input.api-input{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:11px 12px;color:var(--text);font-size:13px;outline:none;-webkit-appearance:none}
+input.api-input::placeholder{color:var(--muted)}
+input.api-input:focus{border-color:var(--purple)}
+.eye-btn{width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;flex-shrink:0}
+.steps-box{background:rgba(255,255,255,0.02);border-radius:9px;padding:10px;margin-top:10px}
+.steps-box p{color:var(--muted);font-size:11px;line-height:2}
+.privacy-box{background:rgba(0,214,143,0.06);border:1px solid rgba(0,214,143,0.15);border-radius:10px;padding:12px;margin-bottom:20px}
+.privacy-box p{color:#6dffcb;font-size:11px;line-height:1.6}
+.save-btn{width:100%;background:linear-gradient(135deg,var(--purple),#4834d4);border:none;border-radius:14px;padding:15px;color:#fff;font-size:15px;font-weight:800;letter-spacing:1px;cursor:pointer;box-shadow:0 4px 20px rgba(108,99,255,0.4)}
+.save-btn:active{opacity:0.85;transform:scale(0.98)}
+
+/* SCAN SCREEN */
+.section-pad{padding:14px}
+.section-label{color:var(--muted);font-size:10px;letter-spacing:2px;text-transform:uppercase;font-weight:700;margin-bottom:10px}
+.scan-type-row{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+.scan-type-btn{background:rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:9px 4px;text-align:center;cursor:pointer;transition:all 0.2s}
+.scan-type-btn.active{background:rgba(108,99,255,0.18);border-color:rgba(108,99,255,0.5)}
+.scan-type-btn .sicon{font-size:19px}
+.scan-type-btn .slabel{font-size:10px;font-weight:700;color:var(--muted);margin-top:3px}
+.scan-type-btn.active .slabel{color:var(--purpleL)}
+.mode-row{display:flex;gap:7px;padding:0 14px 14px}
+.mode-btn{flex:1;padding:9px;background:rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,0.07);border-radius:10px;text-align:center;cursor:pointer;color:var(--muted);font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:1px;transition:all 0.2s}
+.mode-btn.active{background:rgba(108,99,255,0.16);border-color:rgba(108,99,255,0.42);color:var(--purpleL)}
+
+/* VIEWFINDER */
+.viewfinder{margin:0 14px;border-radius:18px;overflow:hidden;border:1px solid var(--border);background:#000;aspect-ratio:4/3;position:relative;display:flex;align-items:center;justify-content:center}
+#video,#preview{width:100%;height:100%;object-fit:cover;display:none}
+.vf-corner{position:absolute;width:20px;height:20px;border-color:var(--purple);border-style:solid;border-width:0}
+.vf-corner.tl{top:10px;left:10px;border-top-width:2px;border-left-width:2px;border-radius:3px 0 0 0}
+.vf-corner.tr{top:10px;right:10px;border-top-width:2px;border-right-width:2px;border-radius:0 3px 0 0}
+.vf-corner.bl{bottom:10px;left:10px;border-bottom-width:2px;border-left-width:2px;border-radius:0 0 0 3px}
+.vf-corner.br{bottom:10px;right:10px;border-bottom-width:2px;border-right-width:2px;border-radius:0 0 3px 0}
+.scan-line{position:absolute;left:10px;right:10px;height:2px;background:linear-gradient(90deg,transparent,var(--purple),transparent);animation:scanLine 2s ease-in-out infinite;border-radius:2px;display:none}
+@keyframes scanLine{0%{top:10px}100%{top:calc(100% - 10px)}}
+.vf-placeholder{display:flex;flex-direction:column;align-items:center;gap:10px;cursor:pointer;padding:30px}
+.vf-placeholder .vf-icon{font-size:44px}
+.vf-placeholder p{color:var(--muted);font-size:13px;text-align:center}
+.vf-placeholder small{color:#333;font-size:11px}
+
+/* CAM CONTROLS */
+.cam-controls{display:flex;align-items:center;justify-content:center;gap:20px;padding:12px 0}
+.flip-btn{width:42px;height:42px;border-radius:50%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer}
+.shutter-btn{width:66px;height:66px;border-radius:50%;border:3px solid rgba(255,255,255,0.25);background:rgba(108,99,255,0.3);display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 0 22px rgba(108,99,255,0.4)}
+.shutter-inner{width:52px;height:52px;border-radius:50%;background:var(--purple)}
+.shutter-btn:active .shutter-inner{transform:scale(0.9)}
+
+/* ACTION BTNS */
+.action-row{display:flex;gap:9px;padding:0 14px 14px}
+.retake-btn{flex:1;padding:12px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:12px;color:#666;font-weight:700;font-size:13px;cursor:pointer;text-align:center}
+.analyze-btn{flex:2;padding:13px;background:linear-gradient(135deg,var(--purple),#4834d4);border:none;border-radius:12px;color:#fff;font-weight:800;font-size:14px;letter-spacing:1px;cursor:pointer;text-align:center;box-shadow:0 4px 18px rgba(108,99,255,0.35)}
+.analyze-btn:active,.retake-btn:active{opacity:0.75;transform:scale(0.97)}
+
+/* ANALYZING */
+.analyzing-box{background:rgba(108,99,255,0.08);border:1px solid rgba(108,99,255,0.2);border-radius:14px;padding:22px;text-align:center;margin:0 14px 14px}
+.analyzing-box .spin{font-size:28px;display:inline-block;animation:spin 1s linear infinite;margin-bottom:8px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.analyzing-title{color:var(--purpleL);font-weight:700;font-size:14px;margin-bottom:4px}
+.analyzing-desc{color:var(--muted);font-size:11px;margin-bottom:12px}
+.step-pills{display:flex;gap:6px;justify-content:center}
+.step-pill{padding:3px 10px;border-radius:20px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);font-size:10px;font-weight:700;color:#333}
+.step-pill.active{background:rgba(108,99,255,0.25);border-color:rgba(108,99,255,0.45);color:var(--purpleL)}
+
+/* ERROR */
+.error-box{background:rgba(255,71,87,0.08);border:1px solid rgba(255,71,87,0.25);border-radius:10px;padding:12px;margin:0 14px 14px;color:#ff6b7a;font-size:12px}
+
+/* RESULTS */
+.results{padding:14px}
+.product-name{text-align:center;font-size:16px;font-weight:800;color:#fff;margin-bottom:3px}
+.product-set{text-align:center;font-size:12px;color:var(--muted);margin-bottom:14px}
+.verdict-box{display:flex;align-items:center;gap:12px;border:1px solid;border-radius:14px;padding:16px;margin-bottom:12px}
+.verdict-icon{font-size:36px}
+.verdict-label{font-size:20px;font-weight:900;letter-spacing:2px}
+.verdict-conf{font-size:11px;color:var(--muted);margin-top:2px}
+.conf-ring{width:50px;height:50px;border-radius:50%;border:3px solid rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0}
+
+.summary-box{background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:12px;margin-bottom:12px;font-size:12px;line-height:1.7;color:#888}
+
+.result-section{background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:14px;margin-bottom:12px}
+.result-section-title{font-size:10px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;font-weight:700;margin-bottom:12px}
+.check-row{display:flex;gap:9px;align-items:flex-start;margin-bottom:9px}
+.check-icon{width:19px;height:19px;border-radius:5px;border:1px solid;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:900;flex-shrink:0;margin-top:1px}
+.check-cat{font-size:12px;font-weight:700;color:#ccc}
+.check-detail{font-size:11px;color:var(--muted);margin-top:1px}
+
+.flags-row{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:12px}
+.flag-box{border:1px solid;border-radius:10px;padding:10px}
+.flag-title{font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px}
+.flag-item{font-size:11px;margin-bottom:3px;line-height:1.5}
+
+.rec-box{background:rgba(108,99,255,0.07);border:1px solid rgba(108,99,255,0.18);border-radius:10px;padding:12px;margin-bottom:12px}
+.rec-title{font-size:9px;color:var(--purpleL);letter-spacing:2px;text-transform:uppercase;font-weight:700;margin-bottom:4px}
+.rec-text{color:#aaa;font-size:12px;line-height:1.7}
+
+.disclaimer{font-size:10px;color:#222;text-align:center;line-height:1.6;margin-bottom:12px}
+
+/* PRICE SECTION */
+.price-section{background:rgba(255,215,0,0.04);border:1px solid rgba(255,215,0,0.2);border-radius:14px;padding:14px;margin-bottom:12px}
+.price-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.price-title{font-size:10px;color:var(--gold);letter-spacing:2px;text-transform:uppercase;font-weight:700}
+.trend-badge{padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;border:1px solid}
+.price-block{margin-bottom:10px}
+.price-block-label{font-size:9px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;font-weight:700;margin-bottom:7px}
+.price-grid{display:flex;gap:6px}
+.price-cell{flex:1;background:rgba(255,255,255,0.03);border-radius:8px;padding:8px;text-align:center}
+.price-cell-label{font-size:9px;color:#444;margin-bottom:3px}
+.price-cell-value{font-size:13px;font-weight:700}
+.price-cell-value.mid{font-size:16px;font-weight:800}
+.psa10-block{background:rgba(108,99,255,0.07);border:1px solid rgba(108,99,255,0.2);border-radius:10px;padding:12px;margin-bottom:8px}
+.psa10-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.psa10-title{font-size:9px;color:var(--purpleL);letter-spacing:2px;text-transform:uppercase;font-weight:700}
+.mult-badge{background:rgba(108,99,255,0.25);border:1px solid rgba(108,99,255,0.45);padding:2px 8px;border-radius:12px;font-size:11px;font-weight:800;color:var(--purpleL)}
+.psa9-row{display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.02);border-radius:8px;padding:9px 12px;margin-bottom:8px}
+.psa9-label{color:var(--muted);font-size:13px;font-weight:700}
+.psa9-val{color:#aaa;font-size:15px;font-weight:700}
+.grading-box{background:rgba(0,214,143,0.06);border:1px solid rgba(0,214,143,0.18);border-radius:9px;padding:10px;margin-bottom:8px;display:flex;gap:8px}
+.grading-title{font-size:9px;color:var(--green);letter-spacing:2px;text-transform:uppercase;font-weight:700;margin-bottom:3px}
+.grading-note{color:#888;font-size:11px}
+.grading-upside{color:var(--green);font-size:11px;font-weight:700;margin-top:2px}
+.live-price-box{background:rgba(0,214,143,0.07);border:1px solid rgba(0,214,143,0.2);border-radius:9px;padding:10px;margin-bottom:10px}
+.live-price-label{font-size:9px;color:var(--green);letter-spacing:2px;text-transform:uppercase;font-weight:700;margin-bottom:7px}
+.ev-box{border:1px solid;border-radius:9px;padding:10px;margin-bottom:8px}
+.ev-row{display:flex;justify-content:space-between;align-items:center}
+.ev-label{font-size:9px;letter-spacing:2px;text-transform:uppercase;font-weight:700}
+.ev-value{font-size:16px;font-weight:800}
+.ev-note{font-size:11px;color:#777;margin-top:4px}
+.invest-box{border:1px solid;border-radius:9px;padding:11px;display:flex;align-items:center;gap:12px;margin-bottom:8px}
+.invest-rating{border:2px solid;border-radius:7px;padding:3px 10px;font-weight:900;font-size:14px;letter-spacing:2px}
+.invest-note{color:#888;font-size:12px;flex:1}
+.market-summary{color:#555;font-size:11px;line-height:1.6;font-style:italic;margin-top:8px}
+.price-source{font-size:9px;color:#222;margin-top:7px}
+.trend-note{color:var(--muted);font-size:10px;font-style:italic;margin-top:5px}
+.pop-report{font-size:11px;color:#555;margin-top:5px}
+
+/* HISTORY */
+.history-section{background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:14px;margin:0 14px 14px}
+.history-row{display:flex;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid rgba(255,255,255,0.04)}
+.history-thumb{width:40px;height:40px;border-radius:7px;object-fit:cover}
+.history-verdict{font-size:12px;font-weight:700}
+.history-meta{font-size:10px;color:var(--muted);margin-top:1px}
+
+/* SETTINGS SCREEN */
+.settings-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);padding-top:calc(12px + env(safe-area-inset-top,0px))}
+.settings-title{font-size:16px;font-weight:800;color:var(--text)}
+.back-btn{color:var(--purpleL);font-size:13px;font-weight:700;cursor:pointer;width:60px}
+.masked-key{color:var(--muted);font-size:11px;font-family:monospace;letter-spacing:1px;margin-bottom:8px}
+.key-configured{font-size:10px;font-weight:700;color:var(--green)}
+
+/* INSTALL BANNER */
+.install-banner{background:rgba(108,99,255,0.1);border:1px solid rgba(108,99,255,0.25);border-radius:12px;padding:12px;margin:12px 14px 0;display:flex;gap:10px;align-items:center;cursor:pointer}
+.install-banner-text{flex:1;font-size:11px;color:var(--purpleL);line-height:1.5}
+.install-banner-text strong{display:block;font-size:13px;margin-bottom:2px}
+.install-btn-small{background:var(--purple);border:none;border-radius:8px;padding:7px 12px;color:#fff;font-size:11px;font-weight:800;cursor:pointer;flex-shrink:0}
+
+canvas{display:none}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- ═══ SETUP SCREEN ═══ -->
+<div id="screen-setup" class="screen active">
+  <div class="scroll setup-scroll">
+    <div class="setup-logo">
+      <div class="setup-logo-icon">🔍</div>
+      <div class="setup-logo-title">TCG <span>AuthScan</span></div>
+      <div class="setup-logo-sub">Authenticate · Value · Invest</div>
+    </div>
+    <div class="setup-heading">API Key Setup</div>
+    <div class="setup-sub">Both keys are completely free. You only need to do this once.</div>
+
+    <!-- Gemini -->
+    <div class="key-card">
+      <div class="key-card-header">
+        <span class="key-card-icon">🤖</span>
+        <div style="flex:1">
+          <div class="key-card-title">Google Gemini API Key</div>
+          <div class="key-card-req">Required</div>
+        </div>
+        <div class="free-tag"><span>FREE</span></div>
+      </div>
+      <div class="key-card-desc">
+        Powers the AI card authentication & price analysis.<br>
+        Get your free key at: <a href="https://aistudio.google.com" target="_blank">aistudio.google.com</a>
+      </div>
+      <div class="input-row">
+        <input class="api-input" id="gemini-input" type="password" placeholder="AIza..." autocomplete="off" autocapitalize="off" spellcheck="false">
+        <div class="eye-btn" onclick="toggleEye('gemini-input','eye-g')"><span id="eye-g">👁️</span></div>
+      </div>
+      <div class="steps-box">
+        <p>1. Go to aistudio.google.com<br>
+        2. Sign in with your Google account (free)<br>
+        3. Click "Get API Key"<br>
+        4. Click "Create API key"<br>
+        5. Copy and paste it above</p>
+      </div>
+    </div>
+
+    <!-- Pokemon TCG -->
+    <div class="key-card">
+      <div class="key-card-header">
+        <span class="key-card-icon">⚡</span>
+        <div style="flex:1">
+          <div class="key-card-title">Pokémon TCG API Key</div>
+          <div class="key-card-opt">Optional — for live card prices</div>
+        </div>
+        <div class="free-tag"><span>FREE</span></div>
+      </div>
+      <div class="key-card-desc">
+        Fetches real-time card prices from TCGPlayer.<br>
+        Get your free key at: <a href="https://pokemontcg.io" target="_blank">pokemontcg.io</a><br>
+        <small style="color:#333">Leave blank — Gemini will estimate prices instead.</small>
+      </div>
+      <div class="input-row">
+        <input class="api-input" id="pokemon-input" type="password" placeholder="Leave blank to skip" autocomplete="off" autocapitalize="off" spellcheck="false">
+        <div class="eye-btn" onclick="toggleEye('pokemon-input','eye-p')"><span id="eye-p">👁️</span></div>
+      </div>
+    </div>
+
+    <div class="privacy-box">
+      <p>🔒 Keys are stored only on your device (localStorage). They are never sent to any server other than Google and PokémonTCG APIs directly from your device.</p>
+    </div>
+
+    <button class="save-btn" onclick="saveKeys()">Save &amp; Start Scanning ⚡</button>
+  </div>
+</div>
+
+<!-- ═══ SCAN SCREEN ═══ -->
+<div id="screen-scan" class="screen">
+  <div class="header">
+    <div class="header-logo">
+      <div class="header-icon">🔍</div>
+      <div>
+        <div class="header-title">TCG <span>AuthScan</span></div>
+        <div class="header-sub">Authenticate · Value · Invest</div>
+      </div>
+    </div>
+    <div class="header-btns">
+      <div class="hbtn" id="history-btn" onclick="toggleHistory()">📋 0</div>
+      <div class="hbtn" onclick="showScreen('settings')">⚙️</div>
+    </div>
+  </div>
+
+  <div class="scroll" id="scan-scroll">
+
+    <!-- Install banner (shown when installable) -->
+    <div class="install-banner" id="install-banner" style="display:none" onclick="installApp()">
+      <div class="install-banner-text">
+        <strong>📲 Install as App</strong>
+        Add to home screen for full app experience
+      </div>
+      <button class="install-btn-small">Install</button>
+    </div>
+
+    <div class="section-pad">
+      <div class="section-label">What are you scanning?</div>
+      <div class="scan-type-row" id="scan-types">
+        <div class="scan-type-btn active" data-type="card" onclick="setScanType(this,'card')">
+          <div class="sicon">🃏</div><div class="slabel">Card</div>
+        </div>
+        <div class="scan-type-btn" data-type="pack" onclick="setScanType(this,'pack')">
+          <div class="sicon">📦</div><div class="slabel">Pack</div>
+        </div>
+        <div class="scan-type-btn" data-type="bundle" onclick="setScanType(this,'bundle')">
+          <div class="sicon">🎁</div><div class="slabel">Bundle</div>
+        </div>
+        <div class="scan-type-btn" data-type="box" onclick="setScanType(this,'box')">
+          <div class="sicon">🗃️</div><div class="slabel">Box</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mode-row">
+      <div class="mode-btn active" id="mode-camera" onclick="setMode('camera')">📷 Camera</div>
+      <div class="mode-btn" id="mode-upload" onclick="setMode('upload')">🖼 Upload</div>
+    </div>
+
+    <!-- Viewfinder -->
+    <div class="viewfinder" id="viewfinder" onclick="vfClick()">
+      <video id="video" autoplay playsinline muted></video>
+      <img id="preview" alt="captured">
+      <div class="vf-corner tl"></div>
+      <div class="vf-corner tr"></div>
+      <div class="vf-corner bl"></div>
+      <div class="vf-corner br"></div>
+      <div class="scan-line" id="scan-line"></div>
+      <div class="vf-placeholder" id="vf-placeholder">
+        <div class="vf-icon">📷</div>
+        <p>Tap to start camera</p>
+        <small>Allow camera access when prompted</small>
+      </div>
+    </div>
+    <canvas id="canvas"></canvas>
+    <input type="file" id="file-input" accept="image/*" style="display:none" onchange="handleFile(event)">
+
+    <!-- Cam controls -->
+    <div class="cam-controls" id="cam-controls" style="display:none">
+      <div class="flip-btn" onclick="flipCamera()">🔄</div>
+      <div class="shutter-btn" onclick="capture()">
+        <div class="shutter-inner"></div>
+      </div>
+      <div style="width:42px"></div>
+    </div>
+
+    <!-- Action buttons -->
+    <div class="action-row" id="action-row" style="display:none">
+      <div class="retake-btn" onclick="retake()">↩ Retake</div>
+      <div class="analyze-btn" id="analyze-btn" onclick="analyze()">🔍 Analyze + Price</div>
+    </div>
+
+    <!-- Analyzing -->
+    <div class="analyzing-box" id="analyzing-box" style="display:none">
+      <div class="spin" id="analyzing-icon">🔍</div>
+      <div class="analyzing-title" id="analyzing-title">Authenticating card...</div>
+      <div class="analyzing-desc" id="analyzing-desc">Checking print quality, holo, fonts & more</div>
+      <div class="step-pills">
+        <div class="step-pill active" id="pill-auth">🔍 Auth</div>
+        <div class="step-pill" id="pill-price">💰 Price</div>
+      </div>
+    </div>
+
+    <!-- Error -->
+    <div class="error-box" id="error-box" style="display:none"></div>
+
+    <!-- Results -->
+    <div class="results" id="results" style="display:none"></div>
+
+    <!-- History -->
+    <div id="history-panel" style="display:none">
+      <div class="history-section" id="history-list"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══ SETTINGS SCREEN ═══ -->
+<div id="screen-settings" class="screen">
+  <div class="settings-header">
+    <div class="back-btn" onclick="showScreen('scan')">← Back</div>
+    <div class="settings-title">API Keys</div>
+    <div style="width:60px"></div>
+  </div>
+  <div class="scroll" style="padding:16px">
+
+    <div class="key-card">
+      <div class="key-card-header">
+        <span class="key-card-icon">🤖</span>
+        <div style="flex:1">
+          <div class="key-card-title">Google Gemini API Key</div>
+          <div id="gemini-status" class="key-configured"></div>
+        </div>
+      </div>
+      <div id="gemini-masked" class="masked-key"></div>
+      <div class="input-row">
+        <input class="api-input" id="s-gemini-input" type="password" placeholder="Enter new key to update" autocapitalize="off" spellcheck="false">
+        <div class="eye-btn" onclick="toggleEye('s-gemini-input','s-eye-g')"><span id="s-eye-g">👁️</span></div>
+      </div>
+    </div>
+
+    <div class="key-card">
+      <div class="key-card-header">
+        <span class="key-card-icon">⚡</span>
+        <div style="flex:1">
+          <div class="key-card-title">Pokémon TCG API Key</div>
+          <div id="pokemon-status" class="key-configured"></div>
+        </div>
+      </div>
+      <div id="pokemon-masked" class="masked-key"></div>
+      <div class="input-row">
+        <input class="api-input" id="s-pokemon-input" type="password" placeholder="Enter new key to update" autocapitalize="off" spellcheck="false">
+        <div class="eye-btn" onclick="toggleEye('s-pokemon-input','s-eye-p')"><span id="s-eye-p">👁️</span></div>
+      </div>
+    </div>
+
+    <div class="privacy-box">
+      <p>🔒 Keys stored only on this device. Never uploaded anywhere.</p>
+    </div>
+
+    <button class="save-btn" onclick="saveSettingsKeys()">Save Changes</button>
+  </div>
+</div>
+
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════════════
+let geminiKey = '', pokemonKey = '';
+let scanType  = 'card';
+let mode      = 'camera';
+let stream    = null;
+let facingMode = 'environment';
+let capturedBase64 = null;
+let history   = [];
+let showHistory = false;
+let deferredInstall = null;
+
+// ═══════════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════════
+window.addEventListener('load', () => {
+  geminiKey  = localStorage.getItem('gemini_key')  || '';
+  pokemonKey = localStorage.getItem('pokemon_key') || '';
+  if (geminiKey) showScreen('scan');
+  else showScreen('setup');
+
+  // PWA install prompt
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault(); deferredInstall = e;
+    document.getElementById('install-banner').style.display = 'flex';
+  });
+});
+
+function installApp() {
+  if (deferredInstall) { deferredInstall.prompt(); }
+  else { alert('To install:\n\nAndroid: Tap ⋮ menu → "Add to Home screen"\niOS: Tap Share → "Add to Home Screen"'); }
+}
+
+// ═══════════════════════════════════════════════════════
+//  SCREENS
+// ═══════════════════════════════════════════════════════
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+  if (name === 'settings') populateSettings();
+  if (name !== 'scan') stopCamera();
+}
+
+// ═══════════════════════════════════════════════════════
+//  KEY SETUP
+// ═══════════════════════════════════════════════════════
+function toggleEye(inputId, eyeId) {
+  const inp = document.getElementById(inputId);
+  const eye = document.getElementById(eyeId);
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+  eye.textContent = inp.type === 'password' ? '👁️' : '🙈';
+}
+
+function saveKeys() {
+  const g = document.getElementById('gemini-input').value.trim();
+  const p = document.getElementById('pokemon-input').value.trim();
+  if (!g) { alert('Gemini API key is required.'); return; }
+  localStorage.setItem('gemini_key', g);
+  localStorage.setItem('pokemon_key', p);
+  geminiKey = g; pokemonKey = p;
+  showScreen('scan');
+}
+
+function populateSettings() {
+  const mask = k => k ? k.slice(0,6)+'••••••••••••'+k.slice(-4) : '';
+  document.getElementById('gemini-status').textContent  = geminiKey  ? '✓ Configured' : 'Not set';
+  document.getElementById('pokemon-status').textContent = pokemonKey ? '✓ Configured' : 'Optional — not set';
+  document.getElementById('gemini-masked').textContent  = mask(geminiKey);
+  document.getElementById('pokemon-masked').textContent = mask(pokemonKey);
+  document.getElementById('s-gemini-input').value  = '';
+  document.getElementById('s-pokemon-input').value = '';
+}
+
+function saveSettingsKeys() {
+  const g = document.getElementById('s-gemini-input').value.trim() || geminiKey;
+  const p = document.getElementById('s-pokemon-input').value.trim() || pokemonKey;
+  if (!g) { alert('Gemini API key cannot be empty.'); return; }
+  localStorage.setItem('gemini_key', g);
+  localStorage.setItem('pokemon_key', p);
+  geminiKey = g; pokemonKey = p;
+  showScreen('scan');
+}
+
+// ═══════════════════════════════════════════════════════
+//  SCAN TYPE & MODE
+// ═══════════════════════════════════════════════════════
+function setScanType(el, type) {
+  document.querySelectorAll('.scan-type-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  scanType = type;
+  const hasPrices = ['card','pack','bundle'].includes(type);
+  document.getElementById('analyze-btn').textContent = '🔍 Analyze' + (hasPrices ? ' + Price' : '');
+  document.getElementById('pill-price').style.display = hasPrices ? '' : 'none';
+}
+
+function setMode(m) {
+  mode = m;
+  document.getElementById('mode-camera').classList.toggle('active', m === 'camera');
+  document.getElementById('mode-upload').classList.toggle('active', m === 'upload');
+  retake();
+  if (m === 'upload') { stopCamera(); document.getElementById('file-input').click(); }
+}
+
+// ═══════════════════════════════════════════════════════
+//  CAMERA
+// ═══════════════════════════════════════════════════════
+function vfClick() {
+  if (capturedBase64) return;
+  if (mode === 'camera') startCamera();
+  else document.getElementById('file-input').click();
+}
+
+async function startCamera() {
+  stopCamera();
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode, width: { ideal: 1280 }, height: { ideal: 720 } }
+    });
+    const vid = document.getElementById('video');
+    vid.srcObject = stream;
+    vid.style.display = 'block';
+    document.getElementById('vf-placeholder').style.display = 'none';
+    document.getElementById('scan-line').style.display = 'block';
+    document.getElementById('cam-controls').style.display = 'flex';
+  } catch(e) {
+    showError('Camera access denied. Use Upload mode instead.');
+  }
+}
+
+function stopCamera() {
+  if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+  document.getElementById('video').style.display = 'none';
+  document.getElementById('video').srcObject = null;
+  document.getElementById('scan-line').style.display = 'none';
+  document.getElementById('cam-controls').style.display = 'none';
+  document.getElementById('vf-placeholder').style.display = 'flex';
+}
+
+function flipCamera() {
+  facingMode = facingMode === 'environment' ? 'user' : 'environment';
+  startCamera();
+}
+
+function capture() {
+  const video = document.getElementById('video');
+  const canvas = document.getElementById('canvas');
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  canvas.getContext('2d').drawImage(video, 0, 0);
+  capturedBase64 = canvas.toDataURL('image/jpeg', 0.85).split(',')[1];
+  const preview = document.getElementById('preview');
+  preview.src = canvas.toDataURL('image/jpeg', 0.85);
+  preview.style.display = 'block';
+  stopCamera();
+  document.getElementById('action-row').style.display = 'flex';
+  clearResults();
+}
+
+function handleFile(e) {
+  const file = e.target.files?.[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const src = ev.target.result;
+    capturedBase64 = src.split(',')[1];
+    const preview = document.getElementById('preview');
+    preview.src = src; preview.style.display = 'block';
+    document.getElementById('vf-placeholder').style.display = 'none';
+    document.getElementById('action-row').style.display = 'flex';
+    clearResults();
+  };
+  reader.readAsDataURL(file);
+}
+
+function retake() {
+  capturedBase64 = null;
+  document.getElementById('preview').style.display = 'none';
+  document.getElementById('preview').src = '';
+  document.getElementById('action-row').style.display = 'none';
+  document.getElementById('vf-placeholder').style.display = 'flex';
+  document.getElementById('file-input').value = '';
+  clearResults();
+  if (mode === 'camera') startCamera();
+}
+
+// ═══════════════════════════════════════════════════════
+//  ANALYSIS
+// ═══════════════════════════════════════════════════════
+function showError(msg) {
+  const b = document.getElementById('error-box');
+  b.textContent = '⚠️ ' + msg;
+  b.style.display = 'block';
+}
+
+function clearResults() {
+  document.getElementById('error-box').style.display = 'none';
+  document.getElementById('results').style.display = 'none';
+  document.getElementById('results').innerHTML = '';
+  document.getElementById('analyzing-box').style.display = 'none';
+}
+
+function setStep(step) {
+  document.getElementById('analyzing-icon').textContent = step === 'price' ? '💰' : '🔍';
+  document.getElementById('analyzing-title').textContent = step === 'price' ? 'Fetching prices...' : 'Authenticating ' + scanType + '...';
+  document.getElementById('analyzing-desc').textContent = step === 'price' ? 'Checking TCGPlayer & estimating values' : 'Checking print quality, holo, fonts & more';
+  document.getElementById('pill-auth').classList.toggle('active', step === 'auth');
+  document.getElementById('pill-price').classList.toggle('active', step === 'price');
+}
+
+async function callGemini(prompt, base64Img) {
+  const parts = [];
+  if (base64Img) parts.push({ inlineData: { mimeType: 'image/jpeg', data: base64Img } });
+  parts.push({ text: prompt });
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`,
+    { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ contents: [{ parts }] }) }
+  );
+  const data = await res.json();
+  if (data.error) throw new Error(data.error.message);
+  return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+}
+
+async function fetchTCGPrice(cardName) {
+  try {
+    const q = encodeURIComponent(`name:"${cardName}"`);
+    const headers = pokemonKey ? { 'X-Api-Key': pokemonKey } : {};
+    const res = await fetch(`https://api.pokemontcg.io/v2/cards?q=${q}&pageSize=1`, { headers });
+    const data = await res.json();
+    const card = data.data?.[0];
+    if (!card) return null;
+    const prices = card.tcgplayer?.prices;
+    if (!prices) return null;
+    const p = prices.holofoil || prices.normal || prices['1stEditionHolofoil'] || Object.values(prices)[0];
+    if (!p) return null;
+    return { low: p.low, mid: p.market || p.mid, high: p.high, setName: card.set?.name, source: 'pokemontcg.io' };
+  } catch { return null; }
+}
+
+function pjson(raw) {
+  const clean = raw.replace(/```json|```/g,'').trim();
+  const s = clean.indexOf('{'), e = clean.lastIndexOf('}');
+  if (s===-1||e===-1) throw new Error('No JSON');
+  return JSON.parse(clean.slice(s,e+1));
+}
+
+const AUTH_PROMPTS = {
+  card:   'You are an expert Pokémon TCG card authenticator. Analyze this card image. Check: print quality (dot pattern, color saturation), holographic foil pattern, font accuracy (Futura), HP/attack numbers, set symbols, rarity symbols, card back rosette pattern, border width/color, copyright line. Identify: card name, set name, set number, rarity, variant (holo/reverse/full art/alt art/secret rare).',
+  pack:   'You are an expert Pokémon TCG booster pack authenticator. Analyze for authenticity. Check: wrapper print quality, holographic sheen, Pokémon logo, set artwork, barcode format, seal quality, resealing signs. Identify the exact set name and pack variant.',
+  bundle: 'You are an expert Pokémon TCG ETB/bundle authenticator. Analyze for authenticity. Check: artwork quality, branding, shrink wrap, holographic seals, font accuracy, barcode, repackaging signs. Identify the exact product name.',
+  box:    'You are an expert Pokémon TCG booster box authenticator. Analyze for authenticity. Check: construction, print quality, branding, tape seal, shrink wrap, side panel text/barcode, pack count, tampering. Identify the exact set name.',
+};
+
+function buildAuthPrompt(type) {
+  return AUTH_PROMPTS[type] + `\n\nRespond in EXACT JSON (no markdown):\n{"verdict":"AUTHENTIC"|"COUNTERFEIT"|"SUSPICIOUS"|"INCONCLUSIVE","confidence":<0-100>,"productName":"<name>","setName":"<set or null>","summary":"<2-3 sentences>","checks":[{"category":"<n>","status":"PASS"|"FAIL"|"WARN"|"UNKNOWN","detail":"<obs>"}],"redFlags":["<issue>"],"greenFlags":["<sign>"],"recommendation":"<advice>"}`;
+}
+
+function buildPricePrompt(type, name, set) {
+  const p = [name, set].filter(Boolean).join(' ');
+  if (type === 'card') return `Pokémon TCG price analyst. Estimate current 2025 market prices for: "${p}". Use typical TCGPlayer/eBay ranges.\n\nReturn ONLY JSON:\n{"raw":{"low":<USD>,"mid":<USD>,"high":<USD>,"trend":"RISING"|"STABLE"|"FALLING","trendNote":"<1 sentence>"},"psa10":{"low":<USD>,"mid":<USD>,"high":<USD>,"popReport":"<pop or null>","gradingUpside":"<Nx raw>","gradingNote":"<worth grading?>"},"psa9":{"mid":<USD or null>},"marketSummary":"<2-3 sentences>","lastUpdated":"2025"}`;
+  if (type === 'pack') return `Pokémon TCG sealed product analyst. Estimate current 2025 prices for: "${p}" sealed booster pack.\n\nReturn ONLY JSON:\n{"sealedPack":{"low":<USD>,"mid":<USD>,"high":<USD>,"trend":"RISING"|"STABLE"|"FALLING","trendNote":"<1 sentence>"},"expectedValue":{"averageEV":<USD>,"evNote":"<EV positive or negative?>"},"investmentRating":"BUY"|"HOLD"|"AVOID","investmentNote":"<1-2 sentences>","marketSummary":"<2-3 sentences>"}`;
+  return `Pokémon TCG sealed product analyst. Estimate current 2025 prices for: "${p}" sealed.\n\nReturn ONLY JSON:\n{"sealedMarket":{"msrp":<USD or null>,"low":<USD>,"mid":<USD>,"high":<USD>,"trend":"RISING"|"STABLE"|"FALLING","trendNote":"<1 sentence>"},"openedValue":{"averageEV":<USD>,"evNote":"<open or keep sealed?>"},"investmentRating":"BUY"|"HOLD"|"AVOID","investmentNote":"<1-2 sentences>","marketSummary":"<2-3 sentences>"}`;
+}
+
+async function analyze() {
+  if (!capturedBase64) return;
+  document.getElementById('action-row').style.display = 'none';
+  document.getElementById('analyzing-box').style.display = 'block';
+  document.getElementById('error-box').style.display = 'none';
+  document.getElementById('results').style.display = 'none';
+  const hasPrices = ['card','pack','bundle'].includes(scanType);
+
+  try {
+    setStep('auth');
+    const authText = await callGemini(buildAuthPrompt(scanType), capturedBase64);
+    const auth = pjson(authText);
+
+    let price = null, tcgPrice = null;
+    if (hasPrices && auth.productName) {
+      setStep('price');
+      const [priceText, liveTcg] = await Promise.all([
+        callGemini(buildPricePrompt(scanType, auth.productName, auth.setName)),
+        scanType === 'card' ? fetchTCGPrice(auth.productName) : Promise.resolve(null),
+      ]);
+      try { price = pjson(priceText); } catch {}
+      tcgPrice = liveTcg;
+    }
+
+    document.getElementById('analyzing-box').style.display = 'none';
+    renderResults(auth, price, tcgPrice);
+    addHistory(auth);
+
+  } catch(e) {
+    document.getElementById('analyzing-box').style.display = 'none';
+    showError('Analysis failed. Check your Gemini API key and internet connection. Error: ' + e.message);
+    document.getElementById('action-row').style.display = 'flex';
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+//  RENDER RESULTS
+// ═══════════════════════════════════════════════════════
+const VCFG = {
+  AUTHENTIC:    { color:'#00d68f', bg:'rgba(0,214,143,0.12)',   border:'rgba(0,214,143,0.35)',   icon:'✅', label:'AUTHENTIC' },
+  COUNTERFEIT:  { color:'#ff4757', bg:'rgba(255,71,87,0.12)',   border:'rgba(255,71,87,0.35)',   icon:'🚨', label:'COUNTERFEIT' },
+  SUSPICIOUS:   { color:'#ffa502', bg:'rgba(255,165,2,0.12)',   border:'rgba(255,165,2,0.35)',   icon:'⚠️', label:'SUSPICIOUS' },
+  INCONCLUSIVE: { color:'#a29bfe', bg:'rgba(162,155,254,0.12)', border:'rgba(162,155,254,0.35)', icon:'❓', label:'INCONCLUSIVE' },
+};
+const SCFG = { PASS:{ color:'#00d68f',icon:'✓'}, FAIL:{color:'#ff4757',icon:'✗'}, WARN:{color:'#ffa502',icon:'!'}, UNKNOWN:{color:'#636e72',icon:'?'} };
+const TCFG = { RISING:{color:'#00d68f',icon:'↑',label:'Rising'}, STABLE:{color:'#ffa502',icon:'→',label:'Stable'}, FALLING:{color:'#ff4757',icon:'↓',label:'Falling'} };
+const ICFG = { BUY:{color:'#00d68f'}, HOLD:{color:'#ffa502'}, AVOID:{color:'#ff4757'} };
+const fmt = n => n!=null ? '$'+Number(n).toFixed(2) : 'N/A';
+
+function trendBadge(trend) {
+  const tc = TCFG[trend]||TCFG.STABLE;
+  return `<span class="trend-badge" style="color:${tc.color};background:${tc.color}18;border-color:${tc.color}50">${tc.icon} ${tc.label}</span>`;
+}
+
+function priceGrid(low, mid, high, hiColor) {
+  return `<div class="price-grid">
+    <div class="price-cell"><div class="price-cell-label">Low</div><div class="price-cell-value" style="color:#555">${fmt(low)}</div></div>
+    <div class="price-cell"><div class="price-cell-label">Mid</div><div class="price-cell-value mid" style="color:${hiColor||'#fff'}">${fmt(mid)}</div></div>
+    <div class="price-cell"><div class="price-cell-label">High</div><div class="price-cell-value" style="color:#555">${fmt(high)}</div></div>
+  </div>`;
+}
+
+function renderCardPrice(price, tcgPrice) {
+  if (!price && !tcgPrice) return '';
+  const mult = price?.raw?.mid && price?.psa10?.mid ? (price.psa10.mid/price.raw.mid).toFixed(1)+'× raw' : '';
+  return `<div class="price-section">
+    <div class="price-header">
+      <div class="price-title">💰 Price Analysis</div>
+      ${price?.raw?.trend ? trendBadge(price.raw.trend) : ''}
+    </div>
+    ${tcgPrice ? `
+    <div class="live-price-box">
+      <div class="live-price-label">🟢 LIVE — TCGPlayer via pokemontcg.io</div>
+      ${priceGrid(tcgPrice.low, tcgPrice.mid, tcgPrice.high, '#00d68f')}
+      <div class="price-source">Source: ${tcgPrice.source}</div>
+    </div>` : ''}
+    ${price?.raw ? `
+    <div class="price-block">
+      <div class="price-block-label">📋 Raw (Ungraded) — AI Estimate</div>
+      ${priceGrid(price.raw.low, price.raw.mid, price.raw.high, '#FFD700')}
+      ${price.raw.trendNote ? `<div class="trend-note">${price.raw.trendNote}</div>` : ''}
+    </div>` : ''}
+    ${price?.psa10 ? `
+    <div class="psa10-block">
+      <div class="psa10-header">
+        <div class="psa10-title">🏆 PSA 10 Gem Mint</div>
+        ${mult ? `<span class="mult-badge">${mult}</span>` : ''}
+      </div>
+      ${priceGrid(price.psa10.low, price.psa10.mid, price.psa10.high, '#a29bfe')}
+      ${price.psa10.popReport ? `<div class="pop-report">PSA Pop: <span style="color:#a29bfe;font-weight:700">${price.psa10.popReport}</span></div>` : ''}
+    </div>
+    ${price.psa10.gradingNote ? `
+    <div class="grading-box">
+      <div>
+        <div class="grading-title">🔬 Grading Viability</div>
+        <div class="grading-note">${price.psa10.gradingNote}</div>
+        ${price.psa10.gradingUpside ? `<div class="grading-upside">${price.psa10.gradingUpside}</div>` : ''}
+      </div>
+    </div>` : ''}` : ''}
+    ${price?.psa9?.mid ? `
+    <div class="psa9-row">
+      <span class="psa9-label">🥈 PSA 9 Mint</span>
+      <span class="psa9-val">${fmt(price.psa9.mid)}</span>
+    </div>` : ''}
+    ${price?.marketSummary ? `<div class="market-summary">${price.marketSummary}</div>` : ''}
+  </div>`;
+}
+
+function renderPackBundlePrice(price, type) {
+  if (!price) return '';
+  const pd = price.sealedPack || price.sealedMarket;
+  const ev = price.expectedValue || price.openedValue;
+  const evPos = ev?.averageEV && pd?.mid && ev.averageEV > pd.mid;
+  const evColor = evPos ? '#00d68f' : '#ff4757';
+  const inv = ICFG[price.investmentRating] || ICFG.HOLD;
+  return `<div class="price-section">
+    <div class="price-header">
+      <div class="price-title">💰 Market Price</div>
+      ${pd?.trend ? trendBadge(pd.trend) : ''}
+    </div>
+    ${pd ? `
+    <div class="price-block">
+      <div style="display:flex;justify-content:space-between;margin-bottom:7px">
+        <div class="price-block-label">📦 Sealed Market</div>
+        ${pd.msrp ? `<span style="color:#333;font-size:11px">MSRP ${fmt(pd.msrp)}</span>` : ''}
+      </div>
+      ${priceGrid(pd.low, pd.mid, pd.high, '#FFD700')}
+      ${pd.trendNote ? `<div class="trend-note">${pd.trendNote}</div>` : ''}
+    </div>` : ''}
+    ${ev ? `
+    <div class="ev-box" style="background:${evColor}0C;border-color:${evColor}30">
+      <div class="ev-row">
+        <div class="ev-label" style="color:${evColor}">${evPos?'📈':'📉'} ${type==='pack'?'Expected Value (EV)':'Opened Value'}</div>
+        <div class="ev-value" style="color:${evColor}">${fmt(ev.averageEV)}</div>
+      </div>
+      ${ev.evNote ? `<div class="ev-note">${ev.evNote}</div>` : ''}
+    </div>` : ''}
+    ${price.investmentRating ? `
+    <div class="invest-box" style="background:${inv.color}10;border-color:${inv.color}30">
+      <div class="invest-rating" style="color:${inv.color};border-color:${inv.color}60">${price.investmentRating}</div>
+      <div class="invest-note">${price.investmentNote||''}</div>
+    </div>` : ''}
+    ${price.marketSummary ? `<div class="market-summary">${price.marketSummary}</div>` : ''}
+  </div>`;
+}
+
+function renderResults(auth, price, tcgPrice) {
+  const vc = VCFG[auth.verdict] || VCFG.INCONCLUSIVE;
+  const hasPrices = ['card','pack','bundle'].includes(scanType);
+
+  let html = '';
+
+  // Product name
+  if (auth.productName) html += `
+    <div class="product-name">${auth.productName}</div>
+    ${auth.setName ? `<div class="product-set">${auth.setName}</div>` : ''}`;
+
+  // Verdict
+  html += `
+  <div class="verdict-box" style="background:${vc.bg};border-color:${vc.border}">
+    <span class="verdict-icon">${vc.icon}</span>
+    <div style="flex:1">
+      <div class="verdict-label" style="color:${vc.color}">${vc.label}</div>
+      <div class="verdict-conf">Auth Confidence: <span style="color:${vc.color};font-weight:700">${auth.confidence}%</span></div>
+    </div>
+    <div class="conf-ring" style="border-color:${vc.color}40;color:${vc.color}">${auth.confidence}%</div>
+  </div>`;
+
+  // Summary
+  html += `<div class="summary-box">${auth.summary}</div>`;
+
+  // Price
+  if (hasPrices) {
+    if (scanType === 'card') html += renderCardPrice(price, tcgPrice);
+    else html += renderPackBundlePrice(price, scanType);
+  }
+
+  // Checks
+  if (auth.checks?.length) {
+    html += `<div class="result-section"><div class="result-section-title">Authentication Checks</div>`;
+    auth.checks.forEach(c => {
+      const sc = SCFG[c.status] || SCFG.UNKNOWN;
+      html += `<div class="check-row">
+        <div class="check-icon" style="background:${sc.color}18;border-color:${sc.color}40;color:${sc.color}">${sc.icon}</div>
+        <div><div class="check-cat">${c.category}</div><div class="check-detail">${c.detail}</div></div>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  // Flags
+  const hasRed = auth.redFlags?.length, hasGreen = auth.greenFlags?.length;
+  if (hasRed || hasGreen) {
+    html += `<div class="flags-row">`;
+    if (hasRed) {
+      html += `<div class="flag-box" style="border-color:#ff475730;background:#ff47570a">
+        <div class="flag-title" style="color:#ff4757">🚩 Red Flags</div>
+        ${auth.redFlags.map(f=>`<div class="flag-item" style="color:#ff8a94">• ${f}</div>`).join('')}
+      </div>`;
+    }
+    if (hasGreen) {
+      html += `<div class="flag-box" style="border-color:#00d68f30;background:#00d68f0a">
+        <div class="flag-title" style="color:#00d68f">✅ Green Flags</div>
+        ${auth.greenFlags.map(f=>`<div class="flag-item" style="color:#6dffcb">• ${f}</div>`).join('')}
+      </div>`;
+    }
+    html += `</div>`;
+  }
+
+  // Recommendation
+  if (auth.recommendation) {
+    html += `<div class="rec-box">
+      <div class="rec-title">💡 Recommendation</div>
+      <div class="rec-text">${auth.recommendation}</div>
+    </div>`;
+  }
+
+  html += `<div class="disclaimer">AI analysis is advisory only. Verify high-value items with physical inspection or professional grading.</div>`;
+  html += `<div class="analyze-btn" onclick="retake()" style="display:block;text-align:center;margin-top:0">📷 Scan Another</div>`;
+
+  const el = document.getElementById('results');
+  el.innerHTML = html;
+  el.style.display = 'block';
+  el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// ═══════════════════════════════════════════════════════
+//  HISTORY
+// ═══════════════════════════════════════════════════════
+function addHistory(auth) {
+  const preview = document.getElementById('preview').src;
+  history.unshift({ id: Date.now(), type: scanType, src: preview, verdict: auth.verdict, confidence: auth.confidence, name: auth.productName, time: new Date().toLocaleTimeString() });
+  if (history.length > 10) history.pop();
+  document.getElementById('history-btn').textContent = '📋 ' + history.length;
+}
+
+function toggleHistory() {
+  showHistory = !showHistory;
+  const panel = document.getElementById('history-panel');
+  if (!showHistory) { panel.style.display = 'none'; return; }
+  if (!history.length) { panel.style.display = 'none'; return; }
+  let html = `<div class="result-section-title">Recent Scans</div>`;
+  history.forEach(h => {
+    const vc = VCFG[h.verdict] || VCFG.INCONCLUSIVE;
+    html += `<div class="history-row">
+      <img class="history-thumb" src="${h.src}" loading="lazy">
+      <div>
+        <div class="history-verdict" style="color:${vc.color}">${vc.icon} ${vc.label}</div>
+        <div class="history-meta">${h.name||h.type} · ${h.confidence}% · ${h.time}</div>
+      </div>
+    </div>`;
+  });
+  document.getElementById('history-list').innerHTML = html;
+  panel.style.display = 'block';
+}
+
+// ═══════════════════════════════════════════════════════
+//  SERVICE WORKER (PWA offline support)
+// ═══════════════════════════════════════════════════════
+if ('serviceWorker' in navigator) {
+  const swCode = `
+self.addEventListener('install', e => self.skipWaiting());
+self.addEventListener('activate', e => clients.claim());
+self.addEventListener('fetch', e => {
+  if (e.request.url.includes('generativelanguage.googleapis.com') ||
+      e.request.url.includes('api.pokemontcg.io')) return;
+  e.respondWith(caches.open('tcg-v1').then(c => c.match(e.request).then(r => r || fetch(e.request))));
+});`;
+  const blob = new Blob([swCode], {type:'application/javascript'});
+  const swUrl = URL.createObjectURL(blob);
+  navigator.serviceWorker.register(swUrl).catch(()=>{});
+}
+</script>
+</body>
+</html>
