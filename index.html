@@ -256,24 +256,18 @@ canvas{display:none}
       </div>
     </div>
 
-    <!-- Pokemon TCG -->
-    <div class="key-card">
+    <!-- TCGdex info box -->
+    <div class="key-card" style="border-color:rgba(0,214,143,0.25);background:rgba(0,214,143,0.04)">
       <div class="key-card-header">
         <span class="key-card-icon">⚡</span>
         <div style="flex:1">
-          <div class="key-card-title">Pokémon TCG API Key</div>
-          <div class="key-card-opt">Optional — for live card prices</div>
+          <div class="key-card-title">Live Card Prices</div>
+          <div class="key-card-opt" style="color:#00d68f">✓ Auto-enabled via TCGdex — No key needed!</div>
         </div>
         <div class="free-tag"><span>FREE</span></div>
       </div>
-      <div class="key-card-desc">
-        Fetches real-time card prices from TCGPlayer.<br>
-        Get your free key at: <a href="https://pokemontcg.io" target="_blank">pokemontcg.io</a><br>
-        <small style="color:#333">Leave blank — Gemini will estimate prices instead.</small>
-      </div>
-      <div class="input-row">
-        <input class="api-input" id="pokemon-input" type="password" placeholder="Leave blank to skip" autocomplete="off" autocapitalize="off" spellcheck="false">
-        <div class="eye-btn" onclick="toggleEye('pokemon-input','eye-p')"><span id="eye-p">👁️</span></div>
+      <div class="key-card-desc" style="color:#6dffcb">
+        Real-time TCGPlayer (USD) + Cardmarket (EUR) prices are automatically fetched from <strong>tcgdex.net</strong> — completely free, no API key or signup required. 🎉
       </div>
     </div>
 
@@ -425,11 +419,7 @@ canvas{display:none}
           <div id="pokemon-status" class="key-configured"></div>
         </div>
       </div>
-      <div id="pokemon-masked" class="masked-key"></div>
-      <div class="input-row">
-        <input class="api-input" id="s-pokemon-input" type="password" placeholder="Enter new key to update" autocapitalize="off" spellcheck="false">
-        <div class="eye-btn" onclick="toggleEye('s-pokemon-input','s-eye-p')"><span id="s-eye-p">👁️</span></div>
-      </div>
+
     </div>
 
     <div class="privacy-box">
@@ -446,7 +436,7 @@ canvas{display:none}
 // ═══════════════════════════════════════════════════════
 //  STATE
 // ═══════════════════════════════════════════════════════
-let geminiKey = '', pokemonKey = '';
+let geminiKey = '';
 let scanType  = 'card';
 let mode      = 'camera';
 let stream    = null;
@@ -461,7 +451,7 @@ let deferredInstall = null;
 // ═══════════════════════════════════════════════════════
 window.addEventListener('load', () => {
   geminiKey  = localStorage.getItem('gemini_key')  || '';
-  pokemonKey = localStorage.getItem('pokemon_key') || '';
+
   if (geminiKey) showScreen('scan');
   else showScreen('setup');
 
@@ -499,31 +489,24 @@ function toggleEye(inputId, eyeId) {
 
 function saveKeys() {
   const g = document.getElementById('gemini-input').value.trim();
-  const p = document.getElementById('pokemon-input').value.trim();
   if (!g) { alert('Gemini API key is required.'); return; }
   localStorage.setItem('gemini_key', g);
-  localStorage.setItem('pokemon_key', p);
-  geminiKey = g; pokemonKey = p;
+  geminiKey = g;
   showScreen('scan');
 }
 
 function populateSettings() {
   const mask = k => k ? k.slice(0,6)+'••••••••••••'+k.slice(-4) : '';
   document.getElementById('gemini-status').textContent  = geminiKey  ? '✓ Configured' : 'Not set';
-  document.getElementById('pokemon-status').textContent = pokemonKey ? '✓ Configured' : 'Optional — not set';
   document.getElementById('gemini-masked').textContent  = mask(geminiKey);
-  document.getElementById('pokemon-masked').textContent = mask(pokemonKey);
   document.getElementById('s-gemini-input').value  = '';
-  document.getElementById('s-pokemon-input').value = '';
 }
 
 function saveSettingsKeys() {
   const g = document.getElementById('s-gemini-input').value.trim() || geminiKey;
-  const p = document.getElementById('s-pokemon-input').value.trim() || pokemonKey;
   if (!g) { alert('Gemini API key cannot be empty.'); return; }
   localStorage.setItem('gemini_key', g);
-  localStorage.setItem('pokemon_key', p);
-  geminiKey = g; pokemonKey = p;
+  geminiKey = g;
   showScreen('scan');
 }
 
@@ -668,17 +651,30 @@ async function callGemini(prompt, base64Img) {
 
 async function fetchTCGPrice(cardName) {
   try {
-    const q = encodeURIComponent(`name:"${cardName}"`);
-    const headers = pokemonKey ? { 'X-Api-Key': pokemonKey } : {};
-    const res = await fetch(`https://api.pokemontcg.io/v2/cards?q=${q}&pageSize=1`, { headers });
-    const data = await res.json();
-    const card = data.data?.[0];
-    if (!card) return null;
-    const prices = card.tcgplayer?.prices;
-    if (!prices) return null;
-    const p = prices.holofoil || prices.normal || prices['1stEditionHolofoil'] || Object.values(prices)[0];
-    if (!p) return null;
-    return { low: p.low, mid: p.market || p.mid, high: p.high, setName: card.set?.name, source: 'pokemontcg.io' };
+    // Search by name using TCGdex (free, no key needed)
+    const q = encodeURIComponent(cardName);
+    const res = await fetch(`https://api.tcgdex.net/v2/en/cards?name=${q}&pageSize=5`);
+    const cards = await res.json();
+    if (!cards?.length) return null;
+    // Get full card data with pricing from first result
+    const cardId = cards[0].id;
+    const res2 = await fetch(`https://api.tcgdex.net/v2/en/cards/${cardId}`);
+    const card = await res2.json();
+    const tcp = card.pricing?.tcgplayer;
+    const cm  = card.pricing?.cardmarket;
+    if (!tcp && !cm) return null;
+    // Pick best TCGPlayer variant (holo > reverse > normal)
+    const variant = tcp?.holo || tcp?.reverse || tcp?.normal;
+    return {
+      low:    variant?.lowPrice    || cm?.low || null,
+      mid:    variant?.marketPrice || cm?.trend || null,
+      high:   variant?.highPrice   || null,
+      lowEUR: cm?.low   || null,
+      midEUR: cm?.trend || null,
+      setName: card.set?.name,
+      source: 'TCGdex (TCGPlayer + Cardmarket)',
+      updated: tcp?.updated || cm?.updated || null,
+    };
   } catch { return null; }
 }
 
@@ -779,9 +775,13 @@ function renderCardPrice(price, tcgPrice) {
     </div>
     ${tcgPrice ? `
     <div class="live-price-box">
-      <div class="live-price-label">🟢 LIVE — TCGPlayer via pokemontcg.io</div>
+      <div class="live-price-label">🟢 LIVE — TCGdex (Free · No Key)</div>
+      <div style="font-size:10px;color:#555;margin-bottom:7px;letter-spacing:1px">🇺🇸 USD — TCGPlayer</div>
       ${priceGrid(tcgPrice.low, tcgPrice.mid, tcgPrice.high, '#00d68f')}
-      <div class="price-source">Source: ${tcgPrice.source}</div>
+      ${(tcgPrice.lowEUR||tcgPrice.midEUR) ? `
+      <div style="font-size:10px;color:#555;letter-spacing:1px;margin-top:10px;margin-bottom:7px">🇪🇺 EUR — Cardmarket</div>
+      ${priceGrid(tcgPrice.lowEUR, tcgPrice.midEUR, null, '#4ecdc4')}` : ''}
+      <div class="price-source">Source: ${tcgPrice.source}${tcgPrice.updated ? ' · Updated: '+new Date(tcgPrice.updated).toLocaleDateString() : ''}</div>
     </div>` : ''}
     ${price?.raw ? `
     <div class="price-block">
@@ -972,7 +972,7 @@ self.addEventListener('install', e => self.skipWaiting());
 self.addEventListener('activate', e => clients.claim());
 self.addEventListener('fetch', e => {
   if (e.request.url.includes('generativelanguage.googleapis.com') ||
-      e.request.url.includes('api.pokemontcg.io')) return;
+      e.request.url.includes('api.tcgdex.net')) return;
   e.respondWith(caches.open('tcg-v1').then(c => c.match(e.request).then(r => r || fetch(e.request))));
 });`;
   const blob = new Blob([swCode], {type:'application/javascript'});
